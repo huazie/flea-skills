@@ -1,16 +1,16 @@
 ---
 name: hexo-blog-starter
 description: |
-  Hexo + GitHub Pages 个人博客搭建助手。用于：
-  (1) 从零开始搭建 Hexo 博客并部署到 GitHub Pages
-  (2) 初始化 Hexo 项目、配置 GitHub Actions 自动部署
+  Hexo + GitHub/GitLab Pages 个人博客搭建助手。用于：
+  (1) 从零开始搭建 Hexo 博客并部署到 GitHub Pages 或 GitLab Pages
+  (2) 初始化 Hexo 项目、配置 GitHub Actions / GitLab CI 自动部署
   (3) 解答 Hexo 建站、主题、部署相关问题
-  触发词："搭建博客"、"创建个人博客"、"Hexo建站"、"GitHub Pages博客"、"帮我建个博客网站"
+  触发词："搭建博客"、"创建个人博客"、"Hexo建站"、"GitHub Pages博客"、"GitLab Pages博客"、"帮我建个博客网站"
 ---
 
 # Hexo 博客搭建指南
 
-基于 GitHub Pages + Hexo 搭建个人博客的完整流程。
+基于 GitHub Pages / GitLab Pages + Hexo 搭建个人博客的完整流程。
 
 ## 前置要求
 
