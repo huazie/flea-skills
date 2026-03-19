@@ -25,18 +25,27 @@ description: |
 
 ## 快速搭建流程
 
-### 1. 安装 Hexo CLI
+### 1. 确定博客项目位置
+
+**询问用户：**
+> 你想在哪里创建 Hexo 博客项目？
+> - 按回车使用默认位置：`~/blog`（或 `C:\Users\<用户名>\blog`）
+> - 或输入自定义路径，如：`E:\projects\my-blog`
+
+**设置项目路径后，后续步骤都基于此路径执行。**
+
+### 2. 安装 Hexo CLI
 
 ```bash
 npm install -g hexo-cli
 ```
 
-### 2. 初始化博客项目
+### 3. 初始化博客项目
 
 ```bash
-# 在指定目录初始化
-hexo init <folder>
-cd <folder>
+# 在用户指定的目录初始化
+hexo init <项目路径>
+cd <项目路径>
 npm install
 ```
 
@@ -127,6 +136,42 @@ git push origin main
 
 部署完成后访问 `https://<username>.github.io/`
 
+---
+
+## 交互式配置流程
+
+在帮助用户搭建博客时，按以下顺序询问关键信息：
+
+### 必问项目
+
+| 序号 | 问题 | 说明 |
+|------|------|------|
+| 1 | **博客项目位置** | 默认 `~/blog`，或用户指定路径 |
+| 2 | **GitHub 用户名** | 用于创建 `<username>.github.io` 仓库 |
+
+### 可选项目（用户未提及则使用默认值）
+
+| 问题 | 默认值 | 说明 |
+|------|--------|------|
+| 博客标题 | `My Blog` | `_config.yml` 中的 `title` |
+| 作者名称 | 系统用户名 | `_config.yml` 中的 `author` |
+| 主题选择 | `landscape` | 可选：next, butterfly, icarus 等 |
+| Node.js 版本 | `20` | GitHub Actions 中的版本 |
+
+### 询问示例
+
+```
+我来帮你搭建 Hexo 博客，先确认几个信息：
+
+1. 博客项目位置？（默认：~/blog，或输入自定义路径）
+2. 你的 GitHub 用户名？（用于创建 GitHub Pages 仓库）
+
+可选配置（按回车使用默认值）：
+3. 博客标题？（默认：My Blog）
+4. 作者名称？（默认：<你的用户名>）
+5. 选择主题？（默认：landscape，可选：next/butterfly/icarus）
+```
+
 ## 项目结构
 
 ```
@@ -177,6 +222,7 @@ blog/
 - [Hexo 配置详解](references/hexo-config.md) - 站点配置说明
 - [GitHub Actions 进阶配置](references/github-actions-advanced.md) - 多主题、外部模块、构建优化
 - [项目模板与插件](references/project-template.md) - package.json、常用插件、主题配置
+- [交互式配置指南](references/interactive-config.md) - 用户询问流程、路径处理规则
 
 ## 参考链接
 
