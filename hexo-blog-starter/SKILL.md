@@ -56,7 +56,16 @@ hexo server
 # 访问 http://localhost:4000
 ```
 
-### 4. 部署到 GitHub Pages
+### 4. 部署到 GitHub Pages 或 GitLab Pages
+
+**询问用户：**
+> 你想部署到哪个平台？
+> - `github` - GitHub Pages（默认）
+> - `gitlab` - GitLab Pages
+
+---
+
+#### 方案 A：GitHub Pages 部署
 
 #### 4.1 创建仓库
 
@@ -138,6 +147,61 @@ git push origin main
 
 ---
 
+#### 方案 B：GitLab Pages 部署
+
+##### B.1 创建仓库
+
+在 GitLab 创建名为 `<username>.gitlab.io` 的仓库。
+
+##### B.2 配置 .gitlab-ci.yml
+
+在项目根目录创建 `.gitlab-ci.yml`：
+
+```yaml
+image: node:20-alpine
+cache:
+  paths:
+    - node_modules/
+
+before_script:
+  - npm install hexo-cli -g
+  - npm install
+
+pages:
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+```
+
+##### B.3 配置 _config.yml
+
+```yaml
+url: https://<username>.gitlab.io
+root: /
+```
+
+##### B.4 推送代码
+
+```bash
+git add .
+git commit -m "Initial blog setup"
+git push origin main
+```
+
+##### B.5 启用共享 Runner
+
+GitLab 项目 Settings → CI/CD → Runners → 启用 shared runners
+
+部署完成后访问 `https://<username>.gitlab.io/`
+
+> 💡 **详细配置**：项目页面、自定义域名等，参见 [references/gitlab-pages.md](references/gitlab-pages.md)
+
+---
+
 ## 交互式配置流程
 
 在帮助用户搭建博客时，按以下顺序询问关键信息：
@@ -147,7 +211,8 @@ git push origin main
 | 序号 | 问题 | 说明 |
 |------|------|------|
 | 1 | **博客项目位置** | 默认 `~/blog`，或用户指定路径 |
-| 2 | **GitHub 用户名** | 用于创建 `<username>.github.io` 仓库 |
+| 2 | **部署平台** | GitHub Pages 或 GitLab Pages |
+| 3 | **用户名** | 对应平台的用户名，用于创建仓库 |
 
 ### 可选项目（用户未提及则使用默认值）
 
@@ -164,12 +229,13 @@ git push origin main
 我来帮你搭建 Hexo 博客，先确认几个信息：
 
 1. 博客项目位置？（默认：~/blog，或输入自定义路径）
-2. 你的 GitHub 用户名？（用于创建 GitHub Pages 仓库）
+2. 部署平台？（github / gitlab，默认：github）
+3. 你的用户名？（用于创建 Pages 仓库）
 
 可选配置（按回车使用默认值）：
-3. 博客标题？（默认：My Blog）
-4. 作者名称？（默认：<你的用户名>）
-5. 选择主题？（默认：landscape，可选：next/butterfly/icarus）
+4. 博客标题？（默认：My Blog）
+5. 作者名称？（默认：<你的用户名>）
+6. 选择主题？（默认：landscape，可选：next/butterfly/icarus）
 ```
 
 ## 项目结构
@@ -221,6 +287,7 @@ blog/
 - [前置环境安装指南](references/prerequisites.md) - Node.js、Git 安装配置
 - [Hexo 配置详解](references/hexo-config.md) - 站点配置说明
 - [GitHub Actions 进阶配置](references/github-actions-advanced.md) - 多主题、外部模块、构建优化
+- [GitLab Pages 部署指南](references/gitlab-pages.md) - GitLab CI/CD 配置、自定义域名
 - [项目模板与插件](references/project-template.md) - package.json、常用插件、主题配置
 - [交互式配置指南](references/interactive-config.md) - 用户询问流程、路径处理规则
 

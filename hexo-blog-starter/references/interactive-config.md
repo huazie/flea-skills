@@ -58,13 +58,23 @@
 > - 直接按回车使用默认：`C:\Users\<用户名>\blog`（Windows）或 `~/blog`（Mac/Linux）
 > - 或输入自定义路径，如：`D:\projects\my-blog`
 
-### 2. GitHub 用户名询问
+### 2. 部署平台询问
 
-> **👤 GitHub 用户名**
+> **🚀 部署平台**
 >
-> 你的 GitHub 用户名是什么？
-> - 用于创建 `<username>.github.io` 仓库
-> - 博客部署后将通过 `https://<username>.github.io` 访问
+> 你想部署到哪个平台？
+> - `github` - GitHub Pages（默认，推荐）
+> - `gitlab` - GitLab Pages（支持私有仓库）
+>
+> 直接按回车使用 GitHub Pages
+
+### 3. 用户名询问
+
+> **👤 用户名**
+>
+> 你的 GitHub/GitLab 用户名是什么？
+> - 用于创建 `<username>.github.io` 或 `<username>.gitlab.io` 仓库
+> - 博客部署后将通过 `https://<username>.github.io` 或 `https://<username>.gitlab.io` 访问
 
 ### 3. 可选配置询问
 
