@@ -108,19 +108,6 @@ jobs:
 
 ## 添加外部模块
 
-### 游戏模块示例
-
-```yaml
-- name: Clean existing game directory
-  run: rm -rf public/game
-
-- name: Checkout Game
-  uses: actions/checkout@v4
-  with:
-    repository: username/game-repo
-    path: public/game
-```
-
 ### 子模块处理
 
 如果博客使用 Git 子模块管理主题：
@@ -205,7 +192,9 @@ on:
     npm install
 ```
 
-### 私有仓库主题？
+### 私有仓库主题？（进阶，少数场景）
+
+> 仅当主题放在**私有仓库**时才需要，普通公开主题无需此步。
 
 需要配置 Personal Access Token：
 
@@ -219,3 +208,32 @@ on:
 ```
 
 需要在仓库 Settings → Secrets 中添加 `PERSONAL_ACCESS_TOKEN`。
+
+## 绑定自定义域名（CNAME）
+
+不想用默认的 `username.github.io`，可以绑定自己的域名（如 `blog.example.com`）。
+
+### 1. 让 Hexo 输出 CNAME 文件
+
+在 `source/` 目录新建名为 `CNAME` 的文件，内容只有一行域名（构建时会被复制到 `public/`）：
+
+```
+blog.example.com
+```
+
+### 2. 配置 DNS
+
+到域名服务商添加解析：
+
+| 类型 | 名称 | 值 |
+|------|------|-----|
+| CNAME | `blog`（子域名） | `<username>.github.io` |
+| A | `@`（裸域名，共 4 条） | `185.199.108.153` / `185.199.109.153` / `185.199.110.153` / `185.199.111.153` |
+
+> 子域名用 CNAME 最省事；裸域名（`example.com`）只能用 A 记录指向 GitHub Pages 的这 4 个 IP。
+
+### 3. 在 GitHub 填写域名并开启 HTTPS
+
+仓库 **Settings → Pages → Custom domain** 填入域名 → **Save** → 等 DNS 校验通过 → 勾选 **Enforce HTTPS**。
+
+> DNS 生效通常需几分钟到几小时；期间页面可能短暂 404，属正常。

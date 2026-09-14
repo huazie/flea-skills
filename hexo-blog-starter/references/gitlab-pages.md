@@ -1,5 +1,7 @@
 # GitLab Pages 部署指南
 
+> 📌 **可选 / 进阶**：多数新手用 GitHub Pages 即可（流程更简单、免费支持用户页）。本页仅在你需要 GitLab 私有仓库部署时参考。
+
 ## GitLab Pages vs GitHub Pages 对比
 
 | 特性 | GitHub Pages | GitLab Pages |

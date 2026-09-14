@@ -72,11 +72,12 @@ flea-skills/
 │   ├── SKILL.md                # Skill guide
 │   └── references/             # Reference docs
 │       ├── prerequisites.md           # Prerequisites install guide
+│       ├── github-auth.md             # GitHub account & auth setup
+│       ├── troubleshooting.md         # Common errors cheat sheet
 │       ├── hexo-config.md             # Hexo config details
 │       ├── github-actions-advanced.md # GitHub Actions advanced config
 │       ├── gitlab-pages.md            # GitLab Pages deploy guide
-│       ├── project-template.md        # Project templates & plugins
-│       └── interactive-config.md      # Interactive config guide
+│       └── project-template.md        # Project templates & plugins
 ├── release-version-analyzer/   # Release changelog skill
 │   └── SKILL.md                # Skill guide
 ├── juejin-daily-checkin/        # Juejin check-in & lottery skill

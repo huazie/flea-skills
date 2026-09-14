@@ -81,9 +81,9 @@ highlight:
   hljs: false
 ```
 
-## 主题配置文件
+## 主题配置文件（覆盖式，推荐）
 
-每个主题使用独立的配置文件 `_config.<theme>.yml`：
+现代主题（NexT v8+、Butterfly 等）用**主题同名配置文件**覆盖主题默认值，**不要**直接改 `themes/<主题>/_config.yml`（主题升级时会被覆盖丢失）：
 
 ```
 blog/
@@ -98,6 +98,8 @@ blog/
 ```yaml
 theme: next  # 或 butterfly, icarus 等
 ```
+
+> 旧版 Next 曾用 `config/next/config.yml` 拆分结构，现已废弃，请勿照搬老教程。
 
 ## 文章模板 (scaffolds)
 
@@ -125,23 +127,17 @@ tags:
 ---
 ```
 
-## 高级目录结构
+## 推荐目录结构
 
 ```
 blog/
-├── config/                  # 高级配置目录
-│   ├── next/               # NexT 主题详细配置
-│   │   └── config.yml
-│   └── butterfly/          # Butterfly 主题详细配置
-│       └── config.yml
 ├── source/
-│   ├── _posts/             # 文章
-│   ├── _drafts/            # 草稿
-│   ├── _data/              # 数据文件
-│   │   ├── links.yml       # 友链数据
-│   │   └── menus.yml       # 菜单配置
-│   ├── images/             # 图片
-│   └── about/              # 关于页面
+│   ├── _posts/          # 文章
+│   ├── _data/           # 数据文件（友链/菜单等）
+│   │   ├── links.yml
+│   │   └── menus.yml
+│   ├── images/          # 图片
+│   └── about/           # 关于页面
 │       └── index.md
 └── themes/
     ├── next/

@@ -72,11 +72,12 @@ flea-skills/
 │   ├── SKILL.md                # 技能指南
 │   └── references/             # 参考资料
 │       ├── prerequisites.md           # 前置环境安装指南
+│       ├── github-auth.md             # GitHub 账号注册与认证
+│       ├── troubleshooting.md         # 常见报错速查表
 │       ├── hexo-config.md             # Hexo 配置详解
 │       ├── github-actions-advanced.md # GitHub Actions 进阶配置
 │       ├── gitlab-pages.md            # GitLab Pages 部署指南
-│       ├── project-template.md        # 项目模板与插件
-│       └── interactive-config.md      # 交互式配置指南
+│       └── project-template.md        # 项目模板与插件
 ├── release-version-analyzer/   # 发布日志生成技能
 │   └── SKILL.md                # 技能指南
 ├── juejin-daily-checkin/        # 掘金签到抽奖技能

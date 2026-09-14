@@ -2,11 +2,27 @@
 
 ## Node.js 安装
 
-### 下载安装
+### 推荐：用 nvm 安装（避免污染 PATH，新手最稳）
+
+- **Windows**：下载 [nvm-windows](https://github.com/coreybutler/nvm-windows/releases) 安装，然后：
+  ```bash
+  nvm install 20
+  nvm use 20
+  ```
+- **macOS / Linux**：
+  ```bash
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  nvm install 20
+  nvm use 20
+  ```
+
+### 备选：直接下载安装包
 
 1. 访问 [Node.js 官方下载页面](https://nodejs.org/en/download/)
 2. 选择 LTS 版本下载（推荐 20.x 或更高）
 3. Windows 用户下载 `.msi` 安装包，双击安装
+
+> ⚠️ 装完**重开终端**再执行 `node -v`；若仍提示找不到命令，说明 PATH 没刷新，重启电脑或手动把 Node 目录加入 PATH。
 
 ### 环境变量配置（Windows）
 

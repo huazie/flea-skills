@@ -2,6 +2,9 @@
 
 _config.yml 是 Hexo 的核心配置文件。
 
+> 📌 **必改项**（新手只需动这几个）：`title`、`author`、`url`、`language`
+> **可选项**（用默认值即可，先不用管）：目录设置、文章设置、分类标签、部署等其余配置。
+
 ## 网站信息
 
 ```yaml
@@ -83,22 +86,15 @@ theme: landscape    # 主题名称（对应 themes/ 目录下的文件夹名）
 
 主题的详细配置在 `themes/<主题名>/_config.yml` 文件中。
 
-## 常用主题推荐
+## 常用主题推荐（新手只看这两个）
 
-| 主题 | 特点 |
-|------|------|
-| NexT | 简洁优雅，功能丰富 |
-| Butterfly | 美观，支持多种特效 |
-| Material | Material Design 风格 |
-| Yelee | 简洁，适合技术博客 |
+| 主题 | 特点 | 安装 |
+|------|------|------|
+| **NexT** | 简洁优雅、文档全、功能丰富（最推荐） | `git clone https://github.com/next-theme/hexo-theme-next themes/next` |
+| **Butterfly** | 美观、支持多种特效、社区活跃 | `git clone https://github.com/jerryc127/hexo-theme-butterfly themes/butterfly` |
 
-安装主题示例：
-
-```bash
-npm install hexo-theme-next
-# 或
-git clone https://github.com/next-theme/hexo-theme-next themes/next
-```
+> ⚠️ `Material`、`Yelee` 等主题已多年停更，新手勿用，避免踩坑。
+> 切换主题只需改 `_config.yml` 的 `theme: next`（或 `butterfly`）。
 
 ## Front-matter 模板
 
