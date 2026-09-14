@@ -25,7 +25,7 @@ description: |
 ## 工作流程总览
 
 ```
-1. 环境自检（agent 执行：检查 node/git/PATH，缺失则引导安装）
+1. 环境自检与平台判断（agent 检测 OS：Windows/macOS/Linux，据此选路径与命令）
 2. 询问必填项（项目位置 / 部署平台 / 用户名）
 3. 询问可选项（标题 / 作者 / 主题 / Node 版本，回车用默认）
 4. 初始化项目（hexo init + npm install + 本地预览验证）
@@ -34,9 +34,19 @@ description: |
 
 > 💡 **所有命令由 agent 在后台执行**，遇到报错自动按 [references/troubleshooting.md](references/troubleshooting.md) 排查，你不用自己处理终端。
 
-## 0. 环境自检（由 agent 执行）
+## 0. 环境自检与平台判断（由 agent 执行）
 
-动手前 agent 会先检测：
+**第一步：判断当前操作系统**，后续路径与命令按系统自动选择（agent 自动检测，无需询问用户）：
+
+| 系统 | 默认项目路径 | 路径风格 | 剪贴板命令 | 安装 Node 推荐 |
+|------|------------|---------|-----------|---------------|
+| **Windows** | `C:\Users\<用户名>\blog` | `\`（Git Bash 里写 `/c/...`） | `clip` | nvm-windows |
+| **macOS** | `~/blog` | `/` | `pbcopy` | nvm |
+| **Linux** | `~/blog` | `/` | `xclip -sel clip` | nvm |
+
+> 检测方式：路径以 `C:\` 开头或存在 `%USERPROFILE%` → Windows；`uname` 返回 `Darwin` → macOS、`Linux` → Linux。
+
+**第二步：检测环境**：
 
 ```bash
 node -v        # 应为 18.x / 20.x，否则引导安装
@@ -45,14 +55,14 @@ git --version  # 应存在
 ```
 
 - 三者齐全 → 直接进入下一步。
-- 缺失 Node/Git → 按 prerequisites.md 引导安装（优先 nvm），**不要假设用户已具备**。
+- 缺失 Node/Git → 按 [references/prerequisites.md](references/prerequisites.md) 引导安装（按系统选 nvm / nvm-windows），**不要假设用户已具备**。
 - 若 `hexo` 命令不在 PATH → 用全局 bin 绝对路径执行，或重装 hexo-cli。
 
 ## 1. 确定博客项目位置
 
 **询问用户：**
 > 你想在哪里创建 Hexo 博客项目？
-> - 按回车使用默认位置：`~/blog`（或 `C:\Users\<用户名>\blog`）
+> - 按回车使用当前系统默认位置：**Windows** `C:\Users\<用户名>\blog` / **macOS、Linux** `~/blog`
 > - 或输入自定义路径，如：`E:\projects\my-blog`
 
 **规则：**
