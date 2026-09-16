@@ -35,8 +35,9 @@ description: |
 ### 步骤 2：免费抽奖（核心原则：只抽免费，绝不消耗矿石）
 1. 浏览器打开 `https://juejin.cn/user/center/lottery`
 2. `sleep` 约 4 秒，等 SPA 渲染出转盘按钮
-3. 浏览器内 `eval` 读 `GET https://api.juejin.cn/growth_api/v1/lottery_config/get` → `data.free_count`
-   - `free_count <= 0` → 今日免费已抽完，**跳过**（不点击、不耗矿）
+3. ⚠️ **免费抽受签到门控**：`free_count` 在 `check_in` 成功之前**恒为 0**（页面显示"去签到免费抽1次"）。**务必先完成步骤 1 的签到，再读本接口的 `free_count`**；否则会误判"今日免费已抽完"而漏抽。实测：签到前 `free_count=0` → 签到后变 `1` → 点击免费按钮后 `1→0`。
+   - 浏览器内 `eval` 读 `GET https://api.juejin.cn/growth_api/v1/lottery_config/get` → `data.free_count`
+   - `free_count <= 0` → 今日免费已抽完或尚未签到，**跳过**（不点击、不耗矿）
    - `free_count > 0` → 浏览器内 `eval` 定位并点击**免费抽奖**按钮（务必排除"十连抽"）：
      ```js
      const items=[...document.querySelectorAll('.turntable-item.lottery')];
@@ -63,6 +64,7 @@ description: |
 6. 掘金 SPA 偶发渲染空白 → 判断登录态优先用 fetch 接口而非 DOM。
 7. **agent-browser `eval` 返回值会被再做一次 JSON 序列化**：eval 内 `return x`（对象），落盘即标准 JSON；解析时做 `JSON.parse(JSON.parse(s))` 兜底（外层是字符串则再解一层）。
    - 备注：签到真实按钮位置尚未实测固化（通常在成长页/首页右侧），如遇 `check_in` fetch 失败，应先人工确认按钮选择器再补充到本 skill，不要盲点 DOM。
+8. **免费抽必须先签到才能解锁**：`lottery_config/get` 的 `free_count` 在 `check_in` 之前恒为 0，不是"今日已抽"而是"尚未签到未解锁"。顺序铁律：**步骤 1 签到（today_status=false 时真签到）→ 步骤 2 再读 free_count**。若某补签任务在 `today_status=true`（已签）时跑抽奖，`free_count` 才真实反映剩余免费次数（1=未抽 / 0=已抽）。2026-09-16 验证：10:00 主任务当日未签，签到前 free_count=0、签到后=1，点击免费按钮中奖 +70 矿石、free_count→0，全程未耗矿。
 
 ## 多时间点补签策略
 
