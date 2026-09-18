@@ -45,6 +45,7 @@ description: |
      free.click(); // 免费按钮；"十连抽"会消耗 2000 矿石，严禁点错
      ```
    - `sleep` 约 3 秒后，重新 `GET lottery_config/get` 复核 `free_count` 应 `1→0`；`get_cur_point` 矿石应**增加**（中奖）或**不变**（未中），**绝不应减少**（免费抽不耗矿）
+   - 抽奖结果（奖品名）用 `scripts/lottery_prize.js` 抓取弹窗文案（选择器 `.lottery-modal/.lottery-result/.result-modal/.dialog-content/.modal-body`，2026-09-17 实测命中「恭喜抽中90矿石 本次抽中的矿石已累加到你的当前矿石数中 收下奖励」）。若为空表示未弹窗，则用 `get_cur_point` 矿石增量（免费抽通常 +N 矿石）兜底说明奖品。
 4. **严禁**手工 `fetch POST lottery/draw`：该发球接口需浏览器签名/指纹，Node 直连恒定返回空 body，CORS 预检也被拦，已实测走不通
 
 ### 步骤 3：结果查询与报告
@@ -62,7 +63,9 @@ description: |
 4. 无头下 `document.cookie` 读取被 SecurityError 拦截 → 用 `eval fetch()` 或 `--json cookies get` 代替。
 5. sessionid 失效（`get_today_status` 返回 403 must login）时：按坑 #3 启动有头 Chrome 让用户重新登录，登录态写回同一 profile，无需重试。
 6. 掘金 SPA 偶发渲染空白 → 判断登录态优先用 fetch 接口而非 DOM。
-7. **agent-browser `eval` 返回值会被再做一次 JSON 序列化**：eval 内 `return x`（对象），落盘即标准 JSON；解析时做 `JSON.parse(JSON.parse(s))` 兜底（外层是字符串则再解一层）。
+7. **agent-browser `eval` 本质是把脚本当「顶层脚本」执行**，两个必踩坑（2026-09-17 实测）：
+   - ⚠️ **顶层 `return` 非法**：若 eval 字符串里直接写 `return {...}`（不在函数/IIFE 内），会报 `SyntaxError: Illegal return statement` 且**整段不执行**（点击/抽奖不会触发）。**必须用 IIFE 包裹 return**：`(async()=>{ ... return x })()` 或 `(()=>{ ... return x })()`。本技能 `scripts/*.js` 已全部用 IIFE 包裹，可直接 `cat` 进 `eval`；但若在自动化里临时手写内联 eval，务必遵守此规则。
+   - **返回值双重 JSON 序列化 + 美化输出**：eval `return` 的对象会被 agent-browser 再做一次 `JSON.stringify` 落盘，且**落盘是美化（带空格换行）格式**，例如 `"free_count": 1`（冒号后有空格）。因此**不要对原始 eval 输出直接裸 grep**（`grep '"free_count":[0-9]*'` 会因空格匹配失败）；务必先过本技能的 `parse.js`（解一层、重新序列化为紧凑 JSON 再 grep），或正则加 `[[:space:]]*` 容错。
    - 备注：签到真实按钮位置尚未实测固化（通常在成长页/首页右侧），如遇 `check_in` fetch 失败，应先人工确认按钮选择器再补充到本 skill，不要盲点 DOM。
 8. **免费抽必须先签到才能解锁**：`lottery_config/get` 的 `free_count` 在 `check_in` 之前恒为 0，不是"今日已抽"而是"尚未签到未解锁"。顺序铁律：**步骤 1 签到（today_status=false 时真签到）→ 步骤 2 再读 free_count**。若某补签任务在 `today_status=true`（已签）时跑抽奖，`free_count` 才真实反映剩余免费次数（1=未抽 / 0=已抽）。2026-09-16 验证：10:00 主任务当日未签，签到前 free_count=0、签到后=1，点击免费按钮中奖 +70 矿石、free_count→0，全程未耗矿。
 
@@ -72,7 +75,7 @@ description: |
 
 ## 附：一键脚本
 
-`scripts/run.sh` 已封装上述全流程（含 `checkin.js` / `lottery_config.js` / `lottery_click.js` / `metrics.js` / `parse.js`），在单次 Bash 调用内串完。使用前按需修改脚本顶部 `NODE` / `ABJS` 变量（默认指向本环境路径；其他机器请改为自己的 node 与 agent-browser 路径，或设置环境变量 `JB_NODE` / `JB_AGENT_BROWSER` 覆盖）。
+`scripts/run.sh` 已封装上述全流程（含 `checkin.js` / `lottery_config.js` / `lottery_click.js` / `lottery_prize.js` / `metrics.js` / `parse.js`），在单次 Bash 调用内串完。使用前按需修改脚本顶部 `NODE` / `ABJS` 变量（默认指向本环境路径；其他机器请改为自己的 node 与 agent-browser 路径，或设置环境变量 `JB_NODE` / `JB_AGENT_BROWSER` 覆盖）。
 
 ```bash
 bash juejin-daily-checkin/scripts/run.sh
@@ -92,9 +95,11 @@ bash juejin-daily-checkin/scripts/run.sh
 成功抽奖时示例：
 ```
 === LOTTERY_CLICK ===
-{"clicked":true,"text":"免费抽奖"}
+{"clicked":true,"text":"免费抽奖次数：1次"}
 === LOTTERY_RECHECK ===
 {"data":{"free_count":0,...},"err_no":0}
+=== LOTTERY_PRIZE ===
+{"prize":"恭喜抽中90矿石 本次抽中的矿石已累加到你的当前矿石数中 收下奖励"}
 === METRICS ===
 {"cont":880,"point":776275,"sum":906}
 ```

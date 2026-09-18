@@ -44,6 +44,9 @@ if [ "${FREE:-0}" -gt 0 ]; then
   AB eval "$(cat "$D/lottery_config.js")" 2>/dev/null | PARSE > "$OUT/out_recheck.json"
   echo "=== LOTTERY_RECHECK ==="
   cat "$OUT/out_recheck.json"
+  AB eval "$(cat "$D/lottery_prize.js")" 2>/dev/null | PARSE > "$OUT/out_prize.json"
+  echo "=== LOTTERY_PRIZE ==="
+  cat "$OUT/out_prize.json"
 else
   echo "=== LOTTERY_SKIP (free_count<=0, 今日免费已抽完) ==="
 fi
