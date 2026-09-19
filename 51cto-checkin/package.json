@@ -1,0 +1,14 @@
+{
+  "name": "51cto-checkin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "51CTO 每日自动签到（Playwright + 一次性登录助手自动续期）",
+  "scripts": {
+    "start": "node scripts/checkin.mjs",
+    "login": "node scripts/login.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.63.0"
+  }
+}
