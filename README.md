@@ -14,6 +14,7 @@
 | hexo-blog-starter | Hexo + GitHub/GitLab Pages 个人博客搭建助手 | [hexo-blog-starter](./hexo-blog-starter) |
 | release-version-analyzer | 分析 git commits 生成结构化发布日志（changelog） | [release-version-analyzer](./release-version-analyzer) |
 | juejin-daily-checkin | 稀土掘金每日自动签到 + 免费幸运抽奖（只抽免费、绝不耗矿） | [juejin-daily-checkin](./juejin-daily-checkin) |
+| 51cto-checkin | 51CTO（blog.51cto.com）每日自动签到，有头系统 Chrome + 持久化 profile 复用登录态 | [51cto-checkin](./51cto-checkin) |
 
 ## 快速开始
 
@@ -64,6 +65,31 @@ bash juejin-daily-checkin/scripts/run.sh
 
 **触发词：** 掘金签到、juejin签到、掘金抽奖、掘金自动签到、稀土掘金签到
 
+### 51cto-checkin
+
+51CTO（blog.51cto.com）每日自动签到，用 Playwright **有头系统 Chrome** 复用专属持久化 profile 携带登录态，由页面自身 JS 完成反爬签名，脚本幂等（今日已签自动跳过）。
+
+**核心功能：**
+- 每日自动签到（幂等，已签则命中 `ALREADY` 跳过，无重复请求）
+- 复用系统 Chrome 持久化 profile 的登录态，**无需导出/续期 cookies.json**
+- 反爬风控友好：默认有头系统 Chrome，绕过 EdgeOne WAF 对无头浏览器的拦截
+
+**前置要求：**
+- 首次需运行一次登录助手 `node scripts/login.mjs`（有图形界面终端），在弹出 Chrome 中登录 51CTO（含验证码），登录态持久化至 `chrome-profile/`
+- 技能目录内安装依赖：`npm install playwright` 与 `node node_modules/playwright/cli.js install chromium`
+
+**用法：**
+```bash
+# 已安装为 WorkBuddy 技能后，直接「调用 51cto-checkin 技能」即可；手动运行：
+cd <技能目录>
+node scripts/checkin.mjs          # 签到（幂等）
+node scripts/login.mjs            # 首次/刷新登录态
+```
+
+**退出码：** `0` 成功/已签 · `3` 登录态失效（`COOKIE_EXPIRED`，重跑 login.mjs） · `1` WAF 拦截/未找到按钮等
+
+**触发词：** 51cto签到、51cto-checkin、51CTO签到
+
 ## 项目结构
 
 ```
@@ -89,6 +115,15 @@ flea-skills/
 │       ├── lottery_click.js           # 点击免费抽奖按钮（排除十连抽）
 │       ├── metrics.js                 # 矿石余额 / 连续累计天数
 │       └── parse.js                   # eval 双重 JSON 序列化兜底
+├── 51cto-checkin/             # 51CTO 签到技能
+│   ├── SKILL.md                # 技能指南（反爬要点 / 登录态策略 / 排错）
+│   ├── package.json           # 依赖声明
+│   ├── .gitignore             # 忽略 node_modules/logs/cookies.json/chrome-profile
+│   ├── scripts/               # 脚本
+│   │   ├── checkin.mjs               # 签到主脚本（有头系统 Chrome + 持久化 profile，幂等）
+│   │   └── login.mjs                 # 一次性登录助手（有头，在 profile 中登录一次）
+│   └── references/            # 参考资料
+│       └── login-setup.md            # 登录助手使用说明
 ├── LICENSE                     # 开源协议
 ├── README.md                   # 项目说明（中文）
 └── README_EN.md                # 项目说明（英文）

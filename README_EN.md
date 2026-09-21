@@ -14,6 +14,7 @@ A collection of practical agent skills.
 | hexo-blog-starter | Hexo + GitHub/GitLab Pages personal blog scaffolding assistant | [hexo-blog-starter](./hexo-blog-starter) |
 | release-version-analyzer | Analyze git commits to generate a structured release changelog | [release-version-analyzer](./release-version-analyzer) |
 | juejin-daily-checkin | Juejin (juejin.cn) daily auto check-in + free lottery draw (free only, never spends ore) | [juejin-daily-checkin](./juejin-daily-checkin) |
+| 51cto-checkin | 51CTO (blog.51cto.com) daily auto check-in, headed system Chrome + persistent profile reuses login state | [51cto-checkin](./51cto-checkin) |
 
 ## Quick Start
 
@@ -64,6 +65,32 @@ bash juejin-daily-checkin/scripts/run.sh
 
 **Trigger words:** juejin check-in, juejin sign-in, juejin lottery, juejin auto check-in
 
+### 51cto-checkin
+
+51CTO (blog.51cto.com) daily auto check-in. Uses Playwright with a **headed system Chrome** and a dedicated **persistent profile** to carry the login session, opens the dedicated sign-in page, reads the authoritative status (signed / sign button), and completes the check-in. Idempotent (skips if already signed today).
+
+**Highlights:**
+- Daily auto check-in (idempotent — skips if already signed, never requests twice)
+- Reuses the persistent Chrome profile to carry login state (no cookie export / renewal needed)
+- Avoids the EdgeOne WAF headless block by defaulting to **headed** system Chrome
+
+**Prerequisites:**
+- A persistent profile login state (default `<skill-dir>/chrome-profile`); run the login helper once in a headed Chrome first
+- System Chrome installed (falls back to Playwright's bundled Chromium if absent); Node.js with Playwright installed
+
+**Usage:**
+```powershell
+cd <skill-dir>
+# One-time login (opens headed Chrome, log in to 51CTO)
+node scripts/login.mjs
+# Daily check-in (idempotent)
+node scripts/checkin.mjs
+```
+
+**Exit codes / result line:** the script prints a `[RESULT] <KIND>` line at the end for automation parsing — `SUCCESS` / `ALREADY` (exit 0), `COOKIE_EXPIRED` (exit 3, re-run `login.mjs`), `waf_blocked` / `profile_locked` / `no_sign_button` / `no_success_signal` (exit 1).
+
+**Trigger words:** 51cto check-in, 51cto sign-in, 51cto daily check-in, 51CTO 签到
+
 ## Project Structure
 
 ```
@@ -89,6 +116,15 @@ flea-skills/
 │       ├── lottery_click.js           # Click free draw button (excludes 十连抽)
 │       ├── metrics.js                 # Ore balance / consecutive & cumulative days
 │       └── parse.js                   # eval double JSON serialization fallback
+├── 51cto-checkin/              # 51CTO daily check-in skill
+│   ├── SKILL.md                # Skill guide
+│   ├── package.json            # npm metadata
+│   ├── .gitignore              # Ignores node_modules / logs / cookies.json / chrome-profile
+│   ├── scripts/                # Scripts
+│   │   ├── checkin.mjs         # Check-in main script (headed Chrome + persistent profile, idempotent)
+│   │   └── login.mjs           # One-time login helper
+│   └── references/             # Reference docs
+│       └── login-setup.md      # Login helper usage
 ├── LICENSE                     # Open source license
 ├── README.md                   # Project README (Chinese)
 └── README_EN.md                # Project README (English)
