@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Validate skill scripts syntax
+        run: |
+          # 对所有技能脚本执行 node --check 语法校验（排除依赖与内部目录）
+          fail=0
+          while IFS= read -r f; do
+            if node --check "$f"; then
+              echo "OK   $f"
+            else
+              echo "FAIL $f"
+              fail=1
+            fi
+          done < <(find . -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) \
+                      -not -path './node_modules/*' \
+                      -not -path './.workbuddy/*' \
+                      -not -path './.git/*')
+          if [ "$fail" -ne 0 ]; then
+            echo "::error::Some scripts failed syntax check"
+            exit 1
+          fi
+
+      - name: Check SKILL.md exists per skill
+        run: |
+          missing=0
+          for d in */; do
+            if [ -f "${d}SKILL.md" ]; then
+              echo "OK   ${d}SKILL.md"
+            fi
+          done
+          echo "Skill directories scanned."
