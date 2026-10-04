@@ -1,7 +1,6 @@
 # flea-skills
 
-[![Stars](https://img.shields.io/github/stars/huazie/flea-skills?style=flat-square&logo=github)](https://github.com/huazie/flea-skills/stargazers)
-[![License](https://img.shields.io/github/license/huazie/flea-skills?style=flat-square)](./LICENSE)
+[![CI](https://github.com/huazie/flea-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/huazie/flea-skills/actions/workflows/ci.yml) [![Stars](https://img.shields.io/github/stars/huazie/flea-skills?style=flat-square&logo=github)](https://github.com/huazie/flea-skills/stargazers) [![License](https://img.shields.io/github/license/huazie/flea-skills?style=flat-square)](./LICENSE)
 
 A collection of practical agent skills.
 
