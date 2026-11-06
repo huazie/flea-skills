@@ -69,20 +69,20 @@ description: |
    - 备注：签到真实按钮位置尚未实测固化（通常在成长页/首页右侧），如遇 `check_in` fetch 失败，应先人工确认按钮选择器再补充到本 skill，不要盲点 DOM。
 8. **免费抽必须先签到才能解锁**：`lottery_config/get` 的 `free_count` 在 `check_in` 之前恒为 0，不是"今日已抽"而是"尚未签到未解锁"。顺序铁律：**步骤 1 签到（today_status=false 时真签到）→ 步骤 2 再读 free_count**。若某补签任务在 `today_status=true`（已签）时跑抽奖，`free_count` 才真实反映剩余免费次数（1=未抽 / 0=已抽）。2026-09-16 验证：10:00 主任务当日未签，签到前 free_count=0、签到后=1，点击免费按钮中奖 +70 矿石、free_count→0，全程未耗矿。
 
-9. **`open` 必须后台化，否则整条命令挂死（2026-09-19 实测阻断）**：`agent-browser open <url>` 在本环境前台运行**不自行返回**（常驻等浏览器会话），且其启动的 Chrome 子进程继承 stdout fd。一旦把 `open` 接到管道（`| head`/`| tail`）或用 `timeout` 包裹，管道写端被 Chrome 长期持有，永远等不到 EOF → 命令卡死数分钟（Chrome 其实已起来、profile 已被改写）。✅ 修复：`"$NODE" "$ABJS" open "<url>" >"$OUT/open.log" 2>&1 &` + `sleep 25` 等就绪；后续页面导航一律改用 `eval "window.location.assign('<url>')"` + `sleep`；**结尾必须杀掉 agent-browser 的 Chrome** 释放 profile 锁（否则下次 open 因锁失败）。`scripts/run.sh` 已按此实现。
-   - ⚠️ **杀 Chrome 的两个坑（2026-09-23 实测修正）**：① Git Bash(MSYS) 会把 `/F` 误当路径转成 `F:/`，`taskkill /F /IM chrome.exe` 报「无效参数/选项 - 'F:/'」并**静默失败**（实测残留 12 个 agent-browser Chrome 进程）；必须加 `MSYS_NO_PATHCONV=1`。② 不要 `taskkill /IM chrome.exe` 一把梭——会连用户自己开着的 Chrome 一起杀掉。正确做法是按 `ExecutablePath` 含 `agent-browser` 过滤 PID 再逐个 `taskkill /F /PID`（`scripts/run.sh` 的 `kill_ab_chrome()` 已封装；杀父进程即可带走全部子进程）。
+9. **`open` 必须后台化，否则整条命令挂死（2026-09-19 实测阻断）**：`agent-browser open <url>` 在本环境前台运行**不自行返回**（常驻等浏览器会话），且其启动的 Chrome 子进程继承 stdout fd。一旦把 `open` 接到管道（`| head`/`| tail`）或用 `timeout` 包裹，管道写端被 Chrome 长期持有，永远等不到 EOF → 命令卡死数分钟（Chrome 其实已起来、profile 已被改写）。✅ 修复：`"$NODE" "$ABJS" open "<url>" >"$OUT/open.log" 2>&1 &` + `sleep 25` 等就绪；后续页面导航一律改用 `eval "window.location.assign('<url>')"` + `sleep`；**结尾必须关闭浏览器会话**释放 profile 锁（否则下次 open 因锁失败）。`scripts/run.sh` 已按此实现。
+   - ✅ **收尾改用 CLI 官方命令（2026-11-06 修正）**：收尾函数 `close_ab_session()` 调用 `AB close --all`，不再枚举/强杀进程。原因：① 本机安全策略把 `wmic.exe` 列入程序黑名单，原「`wmic process ... get ProcessId,ExecutablePath` 过滤 + `taskkill /F /PID`」会静默失败并触发拦截；② Git Bash(MSYS) 会把 `/F` 误转 `F:/` 使参数无效；③ `taskkill /IM chrome.exe` 一把梭会连用户自己开着的 Chrome 一起杀掉。实测 daemon 退出本身会带走 Chrome，`close --all` 后 `Get-Process chrome` 无残留进程、profile 锁不残留，故无需进程级清理，**也不要尝试用其他手段绕过 wmic 黑名单**。
 10. **必须关闭沙箱运行**：沙箱会杀掉 agent-browser 启动的无头 Chrome 子进程 → 所有 `eval` 返回空、字段全部落空、误判 `free_count=0` 而漏抽。执行时需 `dangerouslyDisableSandbox`（或等价方式）。
 11. **抽 helper 传路径参数时用 `argv[1]` 而非 `argv[2]`**：`node -e "<script>" "$PARAM"` 中 `node -e` 的内联脚本不占 `argv[1]` 槽位，用户参数从 `process.argv[1]` 起。误用 `argv[2]` 会让参数恒为 undefined，helper 返回完整对象而非目标字段，导致幂等判断（如 `[ "$SIGNED" = "true" ]`）永不成立、重复 check_in。内存里 `echo "$X" | node -e "..."`（读 stdin、不带路径参数）的写法天然规避此坑，优先采用。
 
 ## 多时间点补签策略
 
-签到任务建议配置为每日多个时间点（如 10:00 / 22:00），每个任务**幂等**：先查 `get_today_status`，已签即跳过，绝不重复请求，避免重复签到。本环境因调度校验器不支持单任务多 BYHOUR（多值 BYHOUR 会报错），只能拆为多个同提示词每日任务共享同一记忆文件——当前实际为 **2 个**：10:00 主任务 `ebf9877e`、22:00 兜底 `6cfeb884`。
+签到任务建议配置为每日多个时间点（如 10:00 / 22:00），每个任务**幂等**：先查 `get_today_status`，已签即跳过，绝不重复请求，避免重复签到。本环境因调度校验器不支持单任务多 BYHOUR（多值 BYHOUR 会报 `BYHOUR must be an integer`），只能拆为多个同提示词每日任务、共享同一 Chrome 登录态 profile（幂等由接口状态保证，无需记忆文件）——当前实际为 **2 个**：10:00 主任务 `bf776153`、22:00 兜底 `1e47c8c5`。
 
 ⚠️ **已知现象（2026-09-22/23）**：10:00 主任务连续两日无执行记录、当日 22:00 查询 `today_status` 均为 `false`，由 22:00 兜底补做成功；同期 22:00 任务一直正常。怀疑 10:00 时段宿主机未开机/未运行导致调度未触发（非登录态问题）。若要更稳，考虑把主任务时间挪到晚间。
 
 ## 附：一键脚本
 
-`scripts/run.sh` 已封装上述全流程（含 `checkin.js` / `lottery_config.js` / `lottery_click.js` / `lottery_prize.js` / `metrics.js` / `parse.js`），在单次 Bash 调用内串完（后台化 open + eval 导航 + 结尾杀 Chrome，已规避坑 9）。使用前按需修改脚本顶部 `NODE` / `ABJS` 变量（默认指向本环境路径；其他机器请改为自己的 node 与 agent-browser 路径，或设置环境变量 `JB_NODE` / `JB_AGENT_BROWSER` 覆盖）。
+`scripts/run.sh` 已封装上述全流程（含 `checkin.js` / `lottery_config.js` / `lottery_click.js` / `lottery_prize.js` / `metrics.js` / `parse.js`），在单次 Bash 调用内串完（后台化 open + eval 导航 + 结尾 `close --all` 释放 profile 锁，已规避坑 9）。脚本**运行时按当前系统自动探测** `NODE` / `ABJS`，不写死版本号（Node 一升级，写死路径立即失效）：优先级为 `JB_NODE`/`JB_AGENT_BROWSER` 环境变量 → PATH 中真实 `node` → WorkBuddy 版本目录（取最新）；`agent-browser.js` 依次查同目录 `node_modules`、历史 workspace 布局、`npm root -g` 全局包、版本目录。定位失败会打印 `[ERROR]` 并 `exit 1`，**不盲跑签到**。因此手动运行直接 `bash scripts/run.sh` 即可，定时任务也无需强制传 `JB_*`；仅当自动探测失败时才用环境变量覆盖。
 
 **必须关闭沙箱运行**（坑 10）：沙箱会杀掉无头 Chrome 子进程导致 eval 全空。
 
