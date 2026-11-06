@@ -176,6 +176,13 @@ function isLoginPage(url, text) {
 function isAlreadyToday(text) {
   return /今日已签到|今日签到已完成/.test(text || '');
 }
+// 已签到按钮态：模块会渲染成 <span class="sign-btn ready">已签到</span>，
+// innerText 只有「已签到」而非「今日已签到」；用 DOM 精确识别，避免误命中累计签到文案。
+async function isSignedButton(page) {
+  const l = page.locator('.sign-btn.ready').first();
+  if (!(await l.count().catch(() => 0)) || !(await l.isVisible().catch(() => false))) return false;
+  return /已签到/.test(await l.innerText().catch(() => ''));
+}
 // 保存排查快照
 async function dumpDebug(page, tag) {
   try {
@@ -232,6 +239,14 @@ async function homepageCheckin(page, context, browser) {
 
   const moduleBtn = page.locator('.signBox .sign-btn, #sign .sign-btn, .signBox #sign').first();
   if (await moduleBtn.count().catch(() => 0) && await moduleBtn.isVisible().catch(() => false)) {
+    // 按钮已是「已签到」态时不要再点击（点击不可点元素不会有任何成功提示，会被误判为失败）
+    if (await isSignedButton(page)) {
+      log('INFO', '今日已签到（首页模块按钮为「已签到」状态）。');
+      result('ALREADY');
+      await refreshCookies(context).catch(() => {});
+      await browser.close();
+      return 0;
+    }
     log('INFO', '找到首页「每日签到」模块按钮，点击中…');
     await moduleBtn.click();
     await page.waitForTimeout(3000);
@@ -244,7 +259,7 @@ async function homepageCheckin(page, context, browser) {
       await browser.close();
       return 0;
     }
-    if (isAlreadyToday(after)) {
+    if (isAlreadyToday(after) || await isSignedButton(page)) {
       log('INFO', '今日已签到（模块点击后检测到）。');
       result('ALREADY');
       await refreshCookies(context).catch(() => {});
@@ -328,8 +343,8 @@ async function main() {
       return exit(3);
     }
 
-    // 步骤 4：今日已签到
-    if (isAlreadyToday(text)) {
+    // 步骤 4：今日已签到（文案或按钮态）
+    if (isAlreadyToday(text) || await isSignedButton(page)) {
       log('INFO', '今日已签到（幂等跳过）。');
       if (DEBUG) await page.screenshot({ path: path.join(LOG_DIR, `debug-${Date.now()}.png`) }).catch(() => {});
       result('ALREADY');
@@ -353,7 +368,7 @@ async function main() {
         await browser.close();
         return exit(0);
       }
-      if (isAlreadyToday(after)) {
+      if (isAlreadyToday(after) || await isSignedButton(page)) {
         log('INFO', '今日已签到（点击后检测到）。');
         result('ALREADY');
         await refreshCookies(context).catch(() => {});
