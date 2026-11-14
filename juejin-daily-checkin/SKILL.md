@@ -74,6 +74,17 @@ description: |
 10. **必须关闭沙箱运行**：沙箱会杀掉 agent-browser 启动的无头 Chrome 子进程 → 所有 `eval` 返回空、字段全部落空、误判 `free_count=0` 而漏抽。执行时需 `dangerouslyDisableSandbox`（或等价方式）。
 11. **抽 helper 传路径参数时用 `argv[1]` 而非 `argv[2]`**：`node -e "<script>" "$PARAM"` 中 `node -e` 的内联脚本不占 `argv[1]` 槽位，用户参数从 `process.argv[1]` 起。误用 `argv[2]` 会让参数恒为 undefined，helper 返回完整对象而非目标字段，导致幂等判断（如 `[ "$SIGNED" = "true" ]`）永不成立、重复 check_in。内存里 `echo "$X" | node -e "..."`（读 stdin、不带路径参数）的写法天然规避此坑，优先采用。
 
+12. **agent-browser 常驻 daemon 崩溃 + stale pid 状态文件 → 连「幽灵 daemon」→ open 失败 → eval 全空（2026-11-14 实测根因，最易误诊）**：daemon 在某次运行（常因 eval 挂死 / Chrome 崩溃）后进程退出，但 `~/.agent-browser/default.{pid,port,engine,version}` 未清理，仍指向已死 PID。此后每次 `AB` 命令都去连这个不存在的 daemon → `AB open` 报 `Chrome exited early without DevToolsActivePort`（或 open 看似成功但 eval 全空）→ CHECKIN / LOTTERY_CONFIG / METRICS 三段 JSON 全空 → 脚本把 `free_count` 误读为 0 **跳过抽奖（假阴性，绝非真实「今日已抽完」）**。
+   - ⚠️ **极易与「profile 锁」混淆**：13:07 首异常时孤立进程短暂占过 `SingletonLock`，但锁会随进程退出释放（锁释放后 open 仍失败即证明锁非主因）。**诊断铁律**：先查 `default.pid` 的 PID 是否真实存活；PID 已死但 pid 文件残留 = stale，这才是根因。
+   - **诊断（只读）**：`pid=$(cat ~/.agent-browser/default.pid)`；用 `tasklist /FI "PID eq $pid"` 或 PowerShell `Get-CimInstance Win32_Process -Filter "ProcessId=$pid"` 核存活；`ls ~/.agent-browser/profiles/juejin/SingletonLock` 应 absent。若 **PID 已死 + 锁 absent + open 仍失败** → 坐实 daemon stale pid。
+   - **修复（进程已 DEAD，删文件不误杀、不影响登录态）**：
+     ```powershell
+     Remove-Item ~\.agent-browser\default.pid, ~\.agent-browser\default.port, ~\.agent-browser\default.engine, ~\.agent-browser\default.version
+     ```
+     删除后下次 `AB` 命令重建健康 daemon（`AB doctor` 应全 pass）。
+   - **自愈**：`scripts/run.sh` 已内置 `maybe_heal_daemon()` 前置——启动前若 `default.pid` 指向进程已死，自动清理 4 个状态文件再继续（见「附：一键脚本」）。但若 daemon **反复**崩溃，需进一步排查 agent-browser v0.27.0 稳定性（无 daemon 日志可考时，优先升级/重装或加外部看门狗）。
+   - **纪律**：遇三段 JSON 全空 + open.log `exited early`，**不要盲重试**（再跑只空跑 + 增生孤立进程），先按本坑诊断 daemon；仅 `403 must login` 才按坑 #3/#5 有头重登。
+
 ## 多时间点补签策略
 
 签到任务建议配置为每日多个时间点（如 10:00 / 22:00），每个任务**幂等**：先查 `get_today_status`，已签即跳过，绝不重复请求，避免重复签到。本环境因调度校验器不支持单任务多 BYHOUR（多值 BYHOUR 会报 `BYHOUR must be an integer`），只能拆为多个同提示词每日任务、共享同一 Chrome 登录态 profile（幂等由接口状态保证，无需记忆文件）——当前实际为 **2 个**：10:00 主任务 `bf776153`、22:00 兜底 `1e47c8c5`。
@@ -85,6 +96,8 @@ description: |
 `scripts/run.sh` 已封装上述全流程（含 `checkin.js` / `lottery_config.js` / `lottery_click.js` / `lottery_prize.js` / `metrics.js` / `parse.js`），在单次 Bash 调用内串完（后台化 open + eval 导航 + 结尾 `close --all` 释放 profile 锁，已规避坑 9）。脚本**运行时按当前系统自动探测** `NODE` / `ABJS`，不写死版本号（Node 一升级，写死路径立即失效）：优先级为 `JB_NODE`/`JB_AGENT_BROWSER` 环境变量 → PATH 中真实 `node` → WorkBuddy 版本目录（取最新）；`agent-browser.js` 依次查同目录 `node_modules`、历史 workspace 布局、`npm root -g` 全局包、版本目录。定位失败会打印 `[ERROR]` 并 `exit 1`，**不盲跑签到**。因此手动运行直接 `bash scripts/run.sh` 即可，定时任务也无需强制传 `JB_*`；仅当自动探测失败时才用环境变量覆盖。
 
 **必须关闭沙箱运行**（坑 10）：沙箱会杀掉无头 Chrome 子进程导致 eval 全空。
+
+> 另：`run.sh` 已内置 **daemon stale pid 自愈**（坑 12）——启动前若 `~/.agent-browser/default.pid` 指向的进程已死，自动清理 `default.{pid,port,engine,version}` 让 agent-browser 重建健康 daemon，避免再因幽灵 daemon 卡死。
 
 ```bash
 bash juejin-daily-checkin/scripts/run.sh

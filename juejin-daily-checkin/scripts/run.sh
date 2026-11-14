@@ -64,6 +64,28 @@ mkdir -p "$OUT"
 AB() { "$NODE" "$ABJS" "$@"; }
 PARSE() { "$NODE" "$D/parse.js"; }
 
+# 自愈：清理 agent-browser 残留的 stale daemon 状态文件（坑 12 / 2026-11-14 实测根因）
+# 现象：daemon 进程崩溃后 default.pid 仍指向已死 PID → 所有 AB 命令连幽灵 daemon →
+#       open 报「exited early without DevToolsActivePort」→ eval 全空 → free_count 误读 0 漏抽。
+# 处理：若 default.pid 记录的进程已死，删除 default.{pid,port,engine,version} 让 AB 重建健康 daemon。
+# 仅删状态文件、绝不杀进程；不影响 profiles/<name> 登录态。
+maybe_heal_daemon() {
+  local base="${HOME}/.agent-browser"
+  local pidf="${base}/default.pid"
+  [ -f "$pidf" ] || return 0
+  local pid
+  pid=$(cat "$pidf" 2>/dev/null | tr -d '[:space:]')
+  [ -n "$pid" ] || return 0
+  # 用 node 检测进程存活（跨平台，避免依赖被封禁的 wmic / 不稳定的 tasklist）
+  if "$NODE" -e "try{process.kill(${pid},0);process.exit(1)}catch(e){process.exit(0)}" >/dev/null 2>&1; then
+    echo "[heal] default.pid=${pid} 已失效(stale)，清理 daemon 状态文件以重建" >&2
+    rm -f "${base}/default.pid" "${base}/default.port" "${base}/default.engine" "${base}/default.version" 2>/dev/null || true
+  else
+    echo "[heal] default.pid=${pid} 进程仍存活，跳过清理" >&2
+  fi
+}
+maybe_heal_daemon
+
 # 释放 profile 锁（坑 9）。2026-11-06 修：
 #   本机安全策略把 wmic.exe 列入程序黑名单，原「wmic 枚举 PID + taskkill /F /PID」实现会静默失败
 #   并触发拦截；且 Git Bash(MSYS) 会把 /F 转成 F:/ 导致参数无效。
